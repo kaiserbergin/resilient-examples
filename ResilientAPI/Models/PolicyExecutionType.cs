@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 
 namespace ResilientAPI.Models
 {
+    [Flags]
     public enum PolicyExecutionType
     {
-        Timeout,
-        CircuitBreaker,
-        Retry
+        Timeout = 1,
+        CircuitBreaker = 2,
+        Retry = 4
     }
 }
