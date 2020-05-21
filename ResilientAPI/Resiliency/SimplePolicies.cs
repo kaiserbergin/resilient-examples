@@ -20,17 +20,18 @@ namespace ResilientAPI.Resiliency.Simple
             HttpStatusCode.GatewayTimeout // 504
         };
 
-        public static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy() => Policy
+        public static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(int retryWaitInMilliseconds = 100) => Policy
             .Handle<HttpRequestException>()
             .OrResult<HttpResponseMessage>(response => _statusCodes.Contains(response.StatusCode))
-            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromMilliseconds(100));
+            .WaitAndRetryAsync(2, retryAttempt => TimeSpan.FromMilliseconds(retryWaitInMilliseconds));
 
-        public static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy() => Policy
-            .Handle<HttpRequestException>()
+        public static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy(int timeSpanInMilliseconds = 5000) => Policy.
+            Handle<HttpRequestException>()
             .OrResult<HttpResponseMessage>(response => _statusCodes.Contains(response.StatusCode))
-            .CircuitBreakerAsync(3, TimeSpan.FromSeconds(5));
+            .CircuitBreakerAsync(3, TimeSpan.FromMilliseconds(timeSpanInMilliseconds));
 
-        public static IAsyncPolicy GetTimeoutPolicy() => Policy.TimeoutAsync(5);
+        public static IAsyncPolicy<HttpResponseMessage> GetTimeoutPolicy(int timeoutInMilliseconds = 250) =>
+            Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromMilliseconds(timeoutInMilliseconds));
     }
-    
+
 }
