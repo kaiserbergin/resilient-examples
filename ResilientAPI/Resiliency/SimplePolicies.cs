@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Polly;
+﻿using Polly;
 using Polly.Timeout;
 using System;
 using System.Linq;
@@ -10,7 +9,6 @@ namespace ResilientAPI.Resiliency.Simple
 {
     public static class SimplePolicies
     {
-
         private static HttpStatusCode[] _statusCodes =
         {
             HttpStatusCode.RequestTimeout, // 408
@@ -22,16 +20,26 @@ namespace ResilientAPI.Resiliency.Simple
 
         public static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(int retryWaitInMilliseconds = 100) => Policy
             .Handle<HttpRequestException>()
+            .Or<TimeoutRejectedException>()
             .OrResult<HttpResponseMessage>(response => _statusCodes.Contains(response.StatusCode))
-            .WaitAndRetryAsync(2, retryAttempt => TimeSpan.FromMilliseconds(retryWaitInMilliseconds));
+            .WaitAndRetryAsync(
+                retryCount: 1,
+                sleepDurationProvider: retryAttempt => TimeSpan.FromMilliseconds(retryWaitInMilliseconds)
+            );
 
-        public static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy(int timeSpanInMilliseconds = 5000) => Policy.
+        public static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy(int timeSpanInMilliseconds = 10000) => Policy.
             Handle<HttpRequestException>()
+            .Or<TimeoutRejectedException>()
             .OrResult<HttpResponseMessage>(response => _statusCodes.Contains(response.StatusCode))
-            .CircuitBreakerAsync(3, TimeSpan.FromMilliseconds(timeSpanInMilliseconds));
+            .CircuitBreakerAsync(
+                handledEventsAllowedBeforeBreaking: 3,
+                durationOfBreak: TimeSpan.FromMilliseconds(timeSpanInMilliseconds)
+            );
 
         public static IAsyncPolicy<HttpResponseMessage> GetTimeoutPolicy(int timeoutInMilliseconds = 250) =>
-            Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromMilliseconds(timeoutInMilliseconds));
+            Policy.TimeoutAsync<HttpResponseMessage>(
+                timeout: TimeSpan.FromMilliseconds(timeoutInMilliseconds),
+                timeoutStrategy: TimeoutStrategy.Optimistic
+            );
     }
-
 }

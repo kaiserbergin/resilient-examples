@@ -21,7 +21,7 @@ namespace ResilientAPI
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseUrls(Environment.GetEnvironmentVariable("BASE_URL"));
+                    webBuilder.UseKestrel();
                 });
     }
 }

@@ -22,8 +22,7 @@
       "launchBrowser": true,
       "launchUrl": "weatherforecast",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "BASE_URL": "http://localhost:1999"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "Docker": {

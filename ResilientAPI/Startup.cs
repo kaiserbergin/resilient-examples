@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ResilientAPI.Clients;
+using ResilientAPI.Resiliency;
+using ResilientAPI.Constants;
 
 namespace ResilientAPI
 {
@@ -16,14 +18,21 @@ namespace ResilientAPI
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddHttpClient<UnerliableEndpointsClient>();
+            services.AddHttpContextAccessor();
+
+            services.AddPolicyRegistry(Registry.GetRegistry());
+
+
+            services.AddHttpClient<UnreliableEndpointsClient>();            
+            services.AddHttpClient<UnreliableEndpointsClientPartDuex>()
+                .AddPolicyHandlerFromRegistry(PolicyConstants.COMBO_POLICY_NAME);
+            services.AddHttpClient<UnreliableForAdvancedCircuitBreaker>()
+                .AddPolicyHandler(AdvancedPolicies.GetAdvancedCircuitBreakerPolicy());
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
@@ -32,7 +41,6 @@ namespace ResilientAPI
             }
 
             app.UseRouting();
-
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

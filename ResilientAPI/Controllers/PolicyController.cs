@@ -3,9 +3,9 @@ using System.Net.Http;
 using Microsoft.AspNetCore.Mvc;
 using ResilientAPI.Models;
 using System.Threading.Tasks;
-using Polly;
 using ResilientAPI.Resiliency.Simple;
 using ResilientAPI.Clients;
+using System.Threading;
 
 namespace ResilientAPI.Controllers
 {
@@ -13,32 +13,51 @@ namespace ResilientAPI.Controllers
     [ApiController]
     public class PolicyController : ControllerBase
     {
-        private readonly UnerliableEndpointsClient _httpClient;
+        private readonly UnreliableEndpointsClient _unPoliciedClient;
+        private readonly UnreliableEndpointsClientPartDuex _policiedClient;
+        private readonly UnreliableForAdvancedCircuitBreaker _advancedCircuitBreakerClient;
 
-        public PolicyController(UnerliableEndpointsClient httpClient)
+        public PolicyController(
+            UnreliableEndpointsClient unreliableEndpointsClient, 
+            UnreliableEndpointsClientPartDuex unreliableEndpointsClientPartDuex,
+            UnreliableForAdvancedCircuitBreaker advancedCircuitBreakerClient)
         {
-            _httpClient = httpClient; 
+            _unPoliciedClient = unreliableEndpointsClient;
+            _policiedClient = unreliableEndpointsClientPartDuex;
+            _advancedCircuitBreakerClient = advancedCircuitBreakerClient;
         }
         
         [HttpPost]
         [Route("single-policy")]
-        public async Task<IActionResult> ExecuteSinglePolicy(PolicyExecutionRequest request)
+        public async Task<HttpResponseMessage> ExecuteSinglePolicy(PolicyExecutionRequest request)
         {
             var executionResult = request.PolicyExecution switch
             {
                 PolicyExecutionType.Timeout => await SimplePolicies.GetTimeoutPolicy()
-                    .ExecuteAsync(async () => await _httpClient.CallUnreliableEndpoint(request.InnerHttpCall)),
+                    .ExecuteAsync(async cancellationToken => 
+                        await _unPoliciedClient.CallUnreliableEndpoint(request.InnerHttpCall, cancellationToken),
+                        CancellationToken.None),
 
                 PolicyExecutionType.Retry => await SimplePolicies.GetRetryPolicy()
-                    .ExecuteAsync(async () => await _httpClient.CallUnreliableEndpoint(request.InnerHttpCall)),
+                    .ExecuteAsync(async () => await _unPoliciedClient.CallUnreliableEndpoint(request.InnerHttpCall)),
 
                 PolicyExecutionType.CircuitBreaker => await SimplePolicies.GetCircuitBreakerPolicy()
-                    .ExecuteAsync(async () => await _httpClient.CallUnreliableEndpoint(request.InnerHttpCall)),
+                    .ExecuteAsync(async () => await _unPoliciedClient.CallUnreliableEndpoint(request.InnerHttpCall)),
 
                 _ => throw new NotImplementedException()
             };
 
-            return Ok(executionResult);
+            return executionResult;
         }
+
+        [HttpPost]
+        [Route("wrapped-policy")]
+        public async Task<HttpResponseMessage> ExecuteWrappedPolicy(GenerateResponseRequestWaitWhat request) => 
+            await _policiedClient.CallUnreliableEndpoint(request);
+
+        [HttpPost]
+        [Route("advanced-circuit-breaker")]
+        public async Task<HttpResponseMessage> ExecuteAdvancedCircuitBreaker(GenerateResponseRequestWaitWhat request) =>
+            await _advancedCircuitBreakerClient.CallUnreliableEndpoint(request);
     }
 }
