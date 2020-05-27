@@ -18,11 +18,5 @@
     <PackageReference Include="prometheus-net.AspNetCore" Version="3.5.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="HealthChecks\" />
-    <Folder Include="Metrics\" />
-    <Folder Include="Services\" />
-  </ItemGroup>
-
 
 </Project>

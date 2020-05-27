@@ -12,7 +12,8 @@ namespace ResilientAPI.Resiliency
                 { PolicyConstants.TIMEOUT_POLICY_NAME, SimplePolicies.GetTimeoutPolicy() },
                 { PolicyConstants.RETRY_POLICY_NAME, SimplePolicies.GetRetryPolicy() },
                 { PolicyConstants.CIRCUITBREAKER_POLICY_NAME, SimplePolicies.GetCircuitBreakerPolicy() },
-                { PolicyConstants.COMBO_POLICY_NAME, AdvancedPolicies.GetWrappedAysncPolicy() }
+                { PolicyConstants.COMBO_POLICY_NAME, AdvancedPolicies.GetWrappedAysncPolicy() },
+                { PolicyConstants.ADVANCED_CIRCUITBREAKER_POLICY_NAME,  AdvancedPolicies.GetAdvancedCircuitBreakerPolicy()}
             };
     }
 }
